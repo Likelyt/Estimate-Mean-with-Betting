@@ -1,0 +1,188 @@
+---
+title: "betting-3"
+author: "Yuantong Li"
+date: "2023-03-22"
+output:
+  pdf_document: default
+  html_document: default
+---
+# Baseball hiting data
+
+```{r}
+set.seed(12345)
+library("readr")
+library(pscl)
+
+data(EfronMorris)
+attach(EfronMorris)
+baseball = EfronMorris
+
+alpha = 0.05
+f_bet = source("f_bet.R")$value
+
+# create the hits data
+n = dim(baseball)[1]
+f_hitting_times = 45
+# True hits distribution
+hits = array(0, dim=c(n,f_hitting_times ))
+for(i in 1:n){
+  hits[i,]= c(rep(1, baseball$r[i]), rep(0, f_hitting_times-baseball$r[i]))
+}
+```
+
+## Betting
+```{r}
+B = 45
+S = 100 # replicate number
+g = 5000 # the interval scale
+hits_boots = array(0, dim=c(S, n, B))
+for(s in 1:S){
+  for(i in 1:n){
+    hits_boots[s,i,] = sample(hits[i,], f_hitting_times, replace=FALSE)
+  }
+}
+
+# Construct confidence interval for each person
+CIs = array(0, dim=c(S, n, 2))
+cover_bet = array(0, dim=c(n, S))
+for(i in 1:n){
+  for(s in 1:S){
+    res = f_bet(hits_boots[s,i,], alpha, g)
+    CIs[s, i,] = c(res$l[B], res$u[B])
+    # check whether in this value cover the true p
+    if(baseball$p[i]>=res$l[B] & baseball$p[i]<=res$u[B]){
+      cover_bet[i,s] = 1
+    }
+  }
+}
+mean_cover_prob_bet = apply(cover_bet, 1, mean) 
+
+plot(mean_cover_prob_bet, col='blue', xlab = "Baseball player", ylab = "Coverage Probability")
+cat('The mean coverage rate for this 18 baseball player is',
+    mean(apply(cover_bet, 1, mean)), '\n') 
+
+
+# view length coverage length
+ave_bet=array(0, dim=c(n,2))
+for(i in 1:n){
+  ave = c(mean(CIs[,i,1]), mean(CIs[,i,2])) 
+  ave_bet[i,] = ave
+}
+cat('The mean coverage length is', mean(ave_bet))
+
+pdf("fig/2-base-bet-CI.pdf", width = 6, height = 5)
+plot(seq(1,n), baseball$p, main="Confidence intervals", xlab="Baseball Player",
+     ylab="Confidence Interval", ylim=c(0,0.6), col = 'blue')
+segments(x0=seq(1,n), y0=ave_bet[,1], x1=seq(1,n), y1=ave_bet[,2])
+dev.off()
+```
+
+
+
+
+## Boostrap - method (compared with the betting method)
+```{r}
+# Try bootstrap
+B=100
+hits_boots = array(0, dim=c(S, n, B))
+for(s in 1:S){
+  for(b in 1:B){
+    for(i in 1:n){
+      hits_boots[s, i,b] = mean(sample(hits[i,], f_hitting_times, replace=TRUE))
+    }
+  }
+}
+
+CIs = array(0, dim=c(S, n, 2))
+cover_boot = array(0, dim=c(n, S))
+for(i in 1:n){
+  for(s in 1:S){
+    res = as.vector(quantile(hits_boots[s,i,], probs = c(alpha/2, 1-alpha/2)))
+    CIs[s, i,] = c(res[1], res[2])
+    # check whether in this value cover the true p
+    if(baseball$p[i]>=res[1] & baseball$p[i]<=res[2]){
+      cover_boot[i,s] = 1
+    }
+  }
+}
+mean_cover_prob_boot = apply(cover_boot, 1, mean) 
+plot(mean_cover_prob_boot, col='red')
+cat('The mean coverage rate for this 18 baseball player is ',
+    mean(apply(cover_boot, 1, mean)), '\n') #g = 200, 0.9433333
+
+# view length
+ave_boot=array(0, dim=c(n,2))
+for(i in 1:n){
+  ave = c(mean(CIs[,i,1]), mean(CIs[,i,2])) # average length = 0.2083333
+  ave_boot[i,] = ave
+}
+cat('The mean coverage length is', mean(ave_boot), '\n') # g = 200; 0.3202333
+
+
+plot(seq(1,n), baseball$p, main="Confidence intervals", xlab="ID",
+     ylab="y", ylim=c(0,0.8), col = 'blue')
+segments(x0=seq(1,n), y0=ave_boot[,1], x1=seq(1,n), y1=ave_boot[,2])
+
+```
+# Plot result togehter
+```{r}
+# Plot coverage probability
+pdf("fig/2-base-CP.pdf", width = 6, height = 5)
+plot(x=seq(1,n), y=mean_cover_prob_bet, col='blue', main="Confidence Probability", ylim=c(0,1), xlab='Baseball Player', ylab='CP', cex=1.4, cex.lab=1.4)
+points(mean_cover_prob_boot, col='red', type='p')
+legend("bottomleft", legend = c("Betting", "Boostrap"), col = c("blue", "red"), pch = c('o', "o"), cex=1.4)
+dev.off()
+
+# Plot CIs for each agent
+pdf("fig/2-base-CI.pdf", width = 6, height = 5)
+plot(seq(1,n)+0.25, baseball$p, main="Confidence Interval", xlab="Baseball Player",
+     ylab="CI", ylim=c(0,0.6), col = 'black', cex=1.4, cex.lab=1.4)
+segments(x0=seq(1,n), y0=ave_bet[,1], x1=seq(1,n), y1=ave_bet[,2], col='blue')
+x_new=seq(1,n)+0.5
+#points(x_new, baseball$p)
+segments(x0=x_new, y0=ave_boot[,1], x1=x_new, y1=ave_boot[,2], col='red')
+legend("topright", legend = c("Betting", "Boostrap"), col = c("blue", "red"), pch = c('l', "l"), cex=1.4)
+dev.off()
+```
+
+## Bootstrap by package
+```{r}
+library(boot)
+
+# Define a function to calculate the mean
+mean_func <- function(data, index) {
+  return(mean(data[index]))
+}
+
+# Use the boot() function to perform the bootstrap analysis
+B = 100
+CIs_boot_pack = array(0, dim=c(S, n, 2))
+cover_boot_pack = array(0, dim=c(n, S))
+for(s in 1:S){
+  for(i in 1:n){
+    boot_results = boot(data = hits[i,], statistic = mean_func, R = B)
+    res = boot.ci(boot_results, conf = 1-alpha, type = 'perc')$percent[4:5]
+    CIs_boot_pack[s, i,] = res
+    if(baseball$p[i]>=res[1] & baseball$p[i]<=res[2]){
+        cover_boot_pack[i,s] = 1
+    }
+  }
+}
+
+mean_cover_prob_boot_pack = apply(cover_boot_pack, 1, mean) 
+plot(mean_cover_prob_boot_pack, col='red')
+cat('The mean coverage rate for this 18 baseball player is ',
+    mean(apply(cover_boot_pack, 1, mean)), '\n')
+
+# view length
+ave_boot_pack=array(0, dim=c(n,2))
+for(i in 1:n){
+  ave = c(mean(CIs_boot_pack[,i,1]), mean(CIs_boot_pack[,i,2])) # average length = 0.2083333
+  ave_boot_pack[i,] = ave
+}
+cat('The mean coverage length is', mean(ave_boot), '\n') # 0.2701318
+
+```
+
+
+
