@@ -11,4 +11,4 @@ R 1-synthetic.R
 ```
 
 ## 2. Baseball batting data
-_Data Description_: We created the first 45 random batting sequences $S_{i}$ based on the first given 45 bats MLE where $S_{i} = \{X_{i}^{s}|\sum_{s=1}^{45} X_{i}^{s}=p_{i}, X_{i}^{s}=\{0,1\}\}, i = 1,2,..., n$. Here $n =18$ represents the 18 players and $p_{i}$ represents the batting MLE. Our goal is to construct confidence interval for the true batting level $p_{i}^{*}$ of each player.
+_Data Description_: We created the first 45 random batting sequences $S_{i}$ based on the first given 45 bats MLE where $S_{i} = \{x_{i}^{s}| \sum_{s=1}^{45} x_{i}^{s}=p_{i}, x_{i}^{s}=\{0,1\}\}, i = 1,2,..., n$. Here $n =18$ represents the 18 players and $p_{i}$ represents the batting MLE. Our goal is to construct confidence interval for the true batting level $p_{i}^{*}$ of each player.
