@@ -1,17 +1,17 @@
 library(boot)
-n = 10000
-dist = 'beta' #ber
+n=10000
+dist="beta" #ber
 # Bernoulli
-mean = 0.25
-alpha = 0.05
+mean=0.25
+alpha=0.05
 # Beta
 beta1=10
 beta2=30
 dup = 100
 
-EB = source("EB.R")$value
-f_bet = source("f_bet.R")$value
-boots_ci = source("bootstrap.R")$value
+EB = source("utils/EB.R")$value
+f_bet = source("utils/f_bet.R")$value
+boots_ci = source("utils/bootstrap.R")$value
 g = 5000
 B = 200
 
@@ -127,9 +127,3 @@ lines(selected, len_bet[selected], type = "l",lty=2, lwd=2,  col = "red")
 lines(selected, len_boot[selected], type = "l",lty=3, lwd=2,  col = "green")
 legend("topright", legend = c("Pr-EB", "Betting", "Boostrap"), lwd=2, cex=1.4, col = c("blue", "red", "green"), lty = 1)
 dev.off()
- 
-
-
-
-
-

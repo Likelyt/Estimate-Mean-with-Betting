@@ -1,5 +1,5 @@
 ---
-title: "betting-3"
+title: "Baseball"
 author: "Yuantong Li"
 date: "2023-03-22"
 output:
@@ -11,14 +11,14 @@ output:
 ```{r}
 set.seed(12345)
 library("readr")
-library(pscl)
+library("pscl")
 
 data(EfronMorris)
 attach(EfronMorris)
 baseball = EfronMorris
 
 alpha = 0.05
-f_bet = source("f_bet.R")$value
+f_bet = source("utils/f_bet.R")$value
 
 # create the hits data
 n = dim(baseball)[1]
@@ -59,7 +59,7 @@ mean_cover_prob_bet = apply(cover_bet, 1, mean)
 
 plot(mean_cover_prob_bet, col='blue', xlab = "Baseball player", ylab = "Coverage Probability")
 cat('The mean coverage rate for this 18 baseball player is',
-    mean(apply(cover_bet, 1, mean)), '\n') 
+    mean(apply(cover_bet, 1, mean)), '\n')
 
 
 # view length coverage length
